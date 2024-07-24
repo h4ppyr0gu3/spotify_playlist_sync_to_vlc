@@ -80,7 +80,8 @@ login
 ENV.fetch('SPOTIFY_PLAYLIST_IDS').split(',').each do |playlist_id|
   playlist = RSpotify::Playlist.find(ENV.fetch('SPOTIFY_USER_ID'), playlist_id)
   all_tracks = get_all_tracks(playlist)
-  playlist_file_name = playlist.name.downcase.gsub(' ', '_')
-  create_sxpf_playlist(playlist, all_tracks, "#{playlist_file_name}.xspf")
+  playlist_file_name = playlist.name.downcase.gsub(' ', '_') + '.xspf'
+  output_file_path = ENV.fetch('OUTPUT_DIR', '.') + '/' + playlist_file_name
+  create_sxpf_playlist(playlist, all_tracks, output_file_path)
 end
 
