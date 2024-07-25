@@ -30,15 +30,15 @@ def song_path(track)
 end
 
 def fix_filename(name)
-  name.to_s.gsub(/[\/\\:|<>"?*\x00-\x1f]|^(AUX|COM[1-9]|CON|LPT[1-9]|NUL|PRN)(?![^.])|^\s|[\s.]$/i, "_")
+  name.to_s.gsub(%r{[/\\:|<>"?*\x00-\x1f]|^(AUX|COM[1-9]|CON|LPT[1-9]|NUL|PRN)(?![^.])|^\s|[\s.]$}i, '_')
 end
 
 # Function to create XPF playlist
 def create_sxpf_playlist(playlist, tracks, output_file)
-  android_path = "file:///storage/emulated/0/Music/Liked Songs/"
-  computer_path = "file:///home/david/Music/Liked Music/"
+  android_path = 'file:///storage/emulated/0/Music/Liked Songs/'
+  computer_path = 'file:///home/david/Music/Liked Music/'
   builder = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
-    xml.playlist(version: "1", xmlns: "http://xspf.org/ns/0/") do
+    xml.playlist(version: '1', xmlns: 'http://xspf.org/ns/0/') do
       xml.title playlist.name
       xml.trackList do
         tracks.each do |track|
@@ -75,13 +75,30 @@ def get_all_tracks(playlist)
   all_tracks
 end
 
+def get_file_version(file_name)
+  file_name.split('.').first.split('_').last.to_i
+end
+
+def clean_files_and_return_next_version
+  playlist_files =  Dir.glob("#{ENV.fetch('OUTPUT_DIR', '.')}/*.xspf")
+  last_version = playlist_files.map { |file| get_file_version(file) }.max
+  playlist_files.each { |file| File.delete(file) }
+
+  if last_version.nil?
+    1
+  else
+    last_version + 1
+  end
+end
+
 login
+
+next_version = clean_files_and_return_next_version
 
 ENV.fetch('SPOTIFY_PLAYLIST_IDS').split(',').each do |playlist_id|
   playlist = RSpotify::Playlist.find(ENV.fetch('SPOTIFY_USER_ID'), playlist_id)
   all_tracks = get_all_tracks(playlist)
-  playlist_file_name = playlist.name.downcase.gsub(' ', '_') + '.xspf'
-  output_file_path = ENV.fetch('OUTPUT_DIR', '.') + '/' + playlist_file_name
+  playlist_file_name = "#{playlist.name.downcase.gsub(' ', '_')}_#{next_version}.xspf"
+  output_file_path = ENV.fetch('OUTPUT_DIR', '.') + "/#{playlist_file_name}"
   create_sxpf_playlist(playlist, all_tracks, output_file_path)
 end
-
