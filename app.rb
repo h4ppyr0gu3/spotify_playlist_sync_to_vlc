@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require 'bundler/inline'
+require 'optparse'
 
 gemfile true do
   source 'https://rubygems.org'
@@ -16,11 +17,39 @@ require 'net/http'
 require 'json'
 require 'dotenv/load'
 
-def login
-  RSpotify.authenticate(
-    ENV.fetch('SPOTIFY_CLIENT_ID'),
-    ENV.fetch('SPOTIFY_CLIENT_SECRET')
-  )
+options = {}
+OptionParser.new do |opts|
+  opts.banner = 'Usage: ruby ./app.rb [options]'
+
+  opts.on('-i', '--client-id CLIENT_ID', 'Spotify Client ID') do |client_id|
+    options[:client_id] = client_id
+  end
+
+  opts.on('-s', '--client-secret CLIENT_SECRET', 'Spotify Client Secret') do |client_secret|
+    options[:client_secret] = client_secret
+  end
+
+  opts.on('-u', '--user-id USER_ID', 'Spotify User ID') do |user_id|
+    options[:user_id] = user_id
+  end
+
+  opts.on('-p', '--playlist-ids PLAYLIST_IDS', 'Spotify Playlist IDs, comma seperated string') do |playlist_ids|
+    options[:playlist_ids] = playlist_ids.split(',')
+  end
+
+  opts.on('-o', '--output-dir OUTPUT_DIR', 'Output directory') do |output_dir|
+    options[:output_dir] = output_dir
+  end
+end.parse!
+
+spotify_client_id = (options[:client_id] || ENV['SPOTIFY_CLIENT_ID']).to_s
+spotify_client_secret = (options[:client_secret] || ENV['SPOTIFY_CLIENT_SECRET']).to_s
+playlist_ids = options[:playlist_ids] || ENV['SPOTIFY_PLAYLIST_IDS'].split(',')
+user_id = (options[:user_id] || ENV['SPOTIFY_USER_ID']).to_s
+output_dir = (options[:output_dir] || ENV['OUTPUT_DIR']).to_s
+
+def login(spotify_client_id, spotify_client_secret)
+  RSpotify.authenticate(spotify_client_id, spotify_client_secret)
 
   # me = RSpotify::User.find(ENV.fetch('SPOTIFY_USER_ID'))
 end
@@ -79,8 +108,8 @@ def get_file_version(file_name)
   file_name.split('.').first.split('_').last.to_i
 end
 
-def clean_files_and_return_next_version
-  playlist_files =  Dir.glob("#{ENV.fetch('OUTPUT_DIR', '.')}/*.xspf")
+def clean_files_and_return_next_version(output_dir)
+  playlist_files = Dir.glob("#{output_dir}/*.xspf")
   last_version = playlist_files.map { |file| get_file_version(file) }.max
   playlist_files.each { |file| File.delete(file) }
 
@@ -91,14 +120,14 @@ def clean_files_and_return_next_version
   end
 end
 
-login
+login(spotify_client_id, spotify_client_secret)
 
-next_version = clean_files_and_return_next_version
+next_version = clean_files_and_return_next_version(output_dir)
 
-ENV.fetch('SPOTIFY_PLAYLIST_IDS').split(',').each do |playlist_id|
-  playlist = RSpotify::Playlist.find(ENV.fetch('SPOTIFY_USER_ID'), playlist_id)
+playlist_ids.each do |playlist_id|
+  playlist = RSpotify::Playlist.find(user_id, playlist_id)
   all_tracks = get_all_tracks(playlist)
   playlist_file_name = "#{playlist.name.downcase.gsub(' ', '_')}_#{next_version}.xspf"
-  output_file_path = ENV.fetch('OUTPUT_DIR', '.') + "/#{playlist_file_name}"
+  output_file_path = output_dir + "/#{playlist_file_name}"
   create_sxpf_playlist(playlist, all_tracks, output_file_path)
 end
