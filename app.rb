@@ -4,6 +4,9 @@
 require 'bundler/inline'
 require 'optparse'
 
+pp ENV['PATH']
+pp ENV['HOME']
+
 gemfile true do
   source 'https://rubygems.org'
 
