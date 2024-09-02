@@ -9,13 +9,13 @@ gemfile true do
 
   gem 'rspotify'
   gem 'nokogiri'
-  gem 'pry'
-  gem 'dotenv'
+  # gem 'pry'
+  # gem 'dotenv'
 end
 
 require 'net/http'
 require 'json'
-require 'dotenv/load'
+# require 'dotenv/load'
 
 options = {}
 OptionParser.new do |opts|
