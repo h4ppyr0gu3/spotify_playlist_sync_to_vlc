@@ -40,6 +40,10 @@ OptionParser.new do |opts|
   opts.on('-o', '--output-dir OUTPUT_DIR', 'Output directory') do |output_dir|
     options[:output_dir] = output_dir
   end
+
+  opts.on('-v', 'verbose') do
+    options[:verbose] = true
+  end
 end.parse!
 
 spotify_client_id = (options[:client_id] || ENV['SPOTIFY_CLIENT_ID']).to_s
@@ -47,6 +51,7 @@ spotify_client_secret = (options[:client_secret] || ENV['SPOTIFY_CLIENT_SECRET']
 playlist_ids = options[:playlist_ids] || ENV['SPOTIFY_PLAYLIST_IDS'].split(',')
 user_id = (options[:user_id] || ENV['SPOTIFY_USER_ID']).to_s
 output_dir = (options[:output_dir] || ENV['OUTPUT_DIR']).to_s
+verbose = options[:verbose] || ENV['VERBOSE']
 
 def login(spotify_client_id, spotify_client_secret)
   RSpotify.authenticate(spotify_client_id, spotify_client_secret)
@@ -83,6 +88,8 @@ def create_sxpf_playlist(playlist, tracks, output_file)
     end
   end
 
+  pp builder.to_xml if verbose
+  puts "Writing playlist to #{output_file}" if verbose
   File.write(output_file, builder.to_xml)
 end
 
@@ -112,6 +119,10 @@ def clean_files_and_return_next_version(output_dir)
   playlist_files = Dir.glob("#{output_dir}/*.xspf")
   last_version = playlist_files.map { |file| get_file_version(file) }.max
   playlist_files.each { |file| File.delete(file) }
+
+  puts "Last version: #{last_version}" if verbose
+  puts "playlist_files: #{playlist_files}" if verbose
+  puts "output_dir: #{output_dir}" if verbose
 
   if last_version.nil?
     1
