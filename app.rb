@@ -68,7 +68,7 @@ def fix_filename(name)
 end
 
 # Function to create XPF playlist
-def create_sxpf_playlist(playlist, tracks, output_file)
+def create_sxpf_playlist(playlist, tracks, output_file, verbose)
   android_path = 'file:///storage/emulated/0/Music/Liked Songs/'
   computer_path = 'file:///home/david/Music/Liked Music/'
   builder = Nokogiri::XML::Builder.new(encoding: 'UTF-8') do |xml|
@@ -88,7 +88,6 @@ def create_sxpf_playlist(playlist, tracks, output_file)
     end
   end
 
-  pp builder.to_xml if verbose
   puts "Writing playlist to #{output_file}" if verbose
   File.write(output_file, builder.to_xml)
 end
@@ -115,7 +114,7 @@ def get_file_version(file_name)
   file_name.split('.').first.split('_').last.to_i
 end
 
-def clean_files_and_return_next_version(output_dir)
+def clean_files_and_return_next_version(output_dir, verbose)
   playlist_files = Dir.glob("#{output_dir}/*.xspf")
   last_version = playlist_files.map { |file| get_file_version(file) }.max
   playlist_files.each { |file| File.delete(file) }
@@ -133,12 +132,14 @@ end
 
 login(spotify_client_id, spotify_client_secret)
 
-next_version = clean_files_and_return_next_version(output_dir)
+next_version = clean_files_and_return_next_version(output_dir, verbose)
 
 playlist_ids.each do |playlist_id|
   playlist = RSpotify::Playlist.find(user_id, playlist_id)
   all_tracks = get_all_tracks(playlist)
   playlist_file_name = "#{playlist.name.downcase.gsub(' ', '_')}_#{next_version}.xspf"
+  puts "playlist_file_name: #{playlist_file_name}" if verbose
   output_file_path = output_dir + "/#{playlist_file_name}"
-  create_sxpf_playlist(playlist, all_tracks, output_file_path)
+  puts "output_file_path: #{output_file_path}" if verbose
+  create_sxpf_playlist(playlist, all_tracks, output_file_path, verbose)
 end
