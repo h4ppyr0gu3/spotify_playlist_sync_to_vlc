@@ -78,7 +78,7 @@ def create_sxpf_playlist(playlist, tracks, output_file, verbose)
     xml.playlist(version: '1', xmlns: 'http://xspf.org/ns/0/') do
       xml.title playlist.name
       xml.trackList do
-        tracks.each do |track|
+        tracks.shuffle.each do |track|
           xml.track do
             if ENV.fetch('COMPUTER', nil) == 'true'
               xml.location computer_path + song_path(track)
