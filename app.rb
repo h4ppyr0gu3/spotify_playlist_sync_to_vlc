@@ -63,7 +63,7 @@ def login(spotify_client_id, spotify_client_secret)
 end
 
 def song_path(track)
-  fix_filename(track[:artists][0]) + ' - ' + fix_filename(track[:name]) + '.ogg'
+  fix_filename(track[:artists].join(', ')) + ' - ' + fix_filename(track[:name]) + '.ogg'
 end
 
 def fix_filename(name)
